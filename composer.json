@@ -1,0 +1,23 @@
+{
+  "name": "vskstudio/takt-core-php",
+  "description": "Framework-agnostic PHP core for Takt analytics: browser snippet renderer + server-to-server event client.",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.1",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "php-http/discovery": "^1.19"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5",
+    "phpstan/phpstan": "^1.11",
+    "friendsofphp/php-cs-fixer": "^3.59",
+    "nyholm/psr7": "^1.8",
+    "php-http/mock-client": "^1.6"
+  },
+  "autoload": { "psr-4": { "Vskstudio\\Takt\\": "src/" } },
+  "autoload-dev": { "psr-4": { "Vskstudio\\Takt\\Tests\\": "tests/" } },
+  "config": { "allow-plugins": { "php-http/discovery": true } },
+  "minimum-stability": "stable"
+}
