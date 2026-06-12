@@ -1,4 +1,5 @@
 <?php
+
 namespace Vskstudio\Takt;
 
 final class Revenue

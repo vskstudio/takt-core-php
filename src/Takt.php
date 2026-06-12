@@ -1,4 +1,5 @@
 <?php
+
 namespace Vskstudio\Takt;
 
 use Http\Discovery\Psr17FactoryDiscovery;
@@ -13,17 +14,21 @@ final class Takt
     private ?string $userIp = null;
     private ?string $userAgent = null;
 
+    private ClientInterface $httpClient;
+    private RequestFactoryInterface $requestFactory;
+    private StreamFactoryInterface $streamFactory;
+
     public function __construct(
         private readonly string $endpoint,
         private readonly string $domain,
         private readonly ?string $apiKey = null,
-        private ?ClientInterface $httpClient = null,
-        private ?RequestFactoryInterface $requestFactory = null,
-        private ?StreamFactoryInterface $streamFactory = null,
+        ?ClientInterface $httpClient = null,
+        ?RequestFactoryInterface $requestFactory = null,
+        ?StreamFactoryInterface $streamFactory = null,
     ) {
-        $this->httpClient ??= Psr18ClientDiscovery::find();
-        $this->requestFactory ??= Psr17FactoryDiscovery::findRequestFactory();
-        $this->streamFactory ??= Psr17FactoryDiscovery::findStreamFactory();
+        $this->httpClient = $httpClient ?? Psr18ClientDiscovery::find();
+        $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
+        $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
     }
 
     public function withVisitor(?string $ip, ?string $userAgent): self

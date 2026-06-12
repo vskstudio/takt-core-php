@@ -1,4 +1,5 @@
 <?php
+
 namespace Vskstudio\Takt\Tests;
 
 use Http\Mock\Client;
@@ -35,7 +36,7 @@ final class TaktTest extends TestCase
         $this->assertSame('POST', $req->getMethod());
         $this->assertSame('https://takt.example.com/api/event', (string) $req->getUri());
         $this->assertSame('Bearer k_test', $req->getHeaderLine('Authorization'));
-        $body = json_decode((string) $req->getBody(), true);
+        $body = (array) json_decode((string) $req->getBody(), true);
         $this->assertSame('Signup', $body['n']);
         $this->assertSame('example.com', $body['d']);
         $this->assertSame('https://example.com/p', $body['u']);
@@ -82,7 +83,7 @@ final class TaktTest extends TestCase
         $mock->addResponse(new \Nyholm\Psr7\Response(202));
         $takt = $this->makeClient($mock);
         $takt->event('Buy', ['count' => 3, 'paid' => true]);
-        $body = json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
         $this->assertSame(['count' => '3', 'paid' => '1'], $body['p']);
     }
 }

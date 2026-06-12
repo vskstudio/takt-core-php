@@ -1,4 +1,5 @@
 <?php
+
 namespace Vskstudio\Takt\Tests;
 
 use PHPUnit\Framework\TestCase;

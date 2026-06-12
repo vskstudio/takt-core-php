@@ -1,4 +1,5 @@
 <?php
+
 namespace Vskstudio\Takt;
 
 final class Options
@@ -24,13 +25,18 @@ final class Options
         };
 
         return new self(
-            domain: (string) ($a['domain'] ?? ''),
-            endpoint: (string) ($a['endpoint'] ?? '/api/event'),
+            domain: self::str($a['domain'] ?? ''),
+            endpoint: self::str($a['endpoint'] ?? '/api/event'),
             outbound: (bool) ($a['outbound'] ?? false),
             files: (bool) ($a['files'] ?? false),
             excludeLocalhost: (bool) ($a['excludeLocalhost'] ?? true),
-            nonce: isset($a['nonce']) ? (string) $a['nonce'] : null,
+            nonce: isset($a['nonce']) ? self::str($a['nonce']) : null,
             mode: $mode,
         );
+    }
+
+    private static function str(mixed $v): string
+    {
+        return is_scalar($v) ? (string) $v : '';
     }
 }
