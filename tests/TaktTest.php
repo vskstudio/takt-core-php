@@ -42,7 +42,20 @@ final class TaktTest extends TestCase
         $this->assertSame('https://example.com/p', $body['u']);
         $this->assertSame(['plan' => 'pro'], $body['p']);
         $this->assertSame(['a' => '29.00', 'c' => 'EUR'], $body['$']);
+        $this->assertSame('', $body['r']);
         $this->assertArrayNotHasKey('w', $body);
+    }
+
+    public function test_referrer_is_forwarded_when_provided(): void
+    {
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = $this->makeClient($mock);
+
+        $takt->event('Signup', [], null, 'https://example.com/p', 'https://news.example/');
+
+        $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertSame('https://news.example/', $body['r']);
     }
 
     public function test_forwards_ip_and_user_agent(): void

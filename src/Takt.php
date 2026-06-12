@@ -47,13 +47,13 @@ final class Takt
     }
 
     /** @param array<string,scalar> $props */
-    public function event(string $name, array $props = [], ?Revenue $revenue = null, ?string $url = null): void
+    public function event(string $name, array $props = [], ?Revenue $revenue = null, ?string $url = null, ?string $referrer = null): void
     {
         $payload = [
             'n' => $name,
             'd' => $this->domain,
             'u' => $url ?? '',
-            'r' => '',
+            'r' => $referrer ?? '',
         ];
         if ($props !== []) {
             $payload['p'] = array_map(static fn ($v) => (string) $v, $props);
@@ -65,9 +65,9 @@ final class Takt
         $this->send($payload);
     }
 
-    public function pageview(?string $url = null): void
+    public function pageview(?string $url = null, ?string $referrer = null): void
     {
-        $this->event('pageview', [], null, $url);
+        $this->event('pageview', [], null, $url, $referrer);
     }
 
     /** @param array<string,mixed> $payload */
