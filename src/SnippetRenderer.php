@@ -32,14 +32,28 @@ final class SnippetRenderer
 
     private function renderInline(): string
     {
-        $bundle = str_replace('</script', '<\/script', (string) file_get_contents(__DIR__ . '/../resources/takt.js'));
+        $path = __DIR__ . '/../resources/takt.js';
+        $bundle = file_get_contents($path);
+        if ($bundle === false) {
+            throw new \RuntimeException("Takt: unable to read inline bundle at {$path}");
+        }
 
         return sprintf(
             "<script%s%s>%s</script>",
             $this->dataAttrs(),
             $this->nonceAttr(),
-            $bundle,
+            self::neutralizeScriptClose($bundle),
         );
+    }
+
+    /**
+     * Neutralize any "</script" inside an inline bundle so it cannot break out of
+     * the surrounding <script> tag. Matched case-insensitively because the HTML
+     * parser closes the block on "</script" regardless of case.
+     */
+    public static function neutralizeScriptClose(string $js): string
+    {
+        return preg_replace('#</(script)#i', '<\\\\/$1', $js) ?? $js;
     }
 
     private function dataAttrs(): string

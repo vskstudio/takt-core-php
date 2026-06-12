@@ -58,4 +58,11 @@ final class SnippetRendererTest extends TestCase
         $html = (new SnippetRenderer(new Options(domain: 'example.com', endpoint: '/collect', mode: Mode::Cdn)))->render();
         $this->assertStringContainsString('data-endpoint="/collect"', $html);
     }
+
+    public function test_inline_neutralizes_script_close_case_insensitively(): void
+    {
+        $this->assertSame('<\\/script>', SnippetRenderer::neutralizeScriptClose('</script>'));
+        $this->assertSame('<\\/SCRIPT >', SnippetRenderer::neutralizeScriptClose('</SCRIPT >'));
+        $this->assertSame('var takt={};', SnippetRenderer::neutralizeScriptClose('var takt={};'));
+    }
 }
