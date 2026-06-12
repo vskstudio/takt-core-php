@@ -1,11 +1,11 @@
 <?php
 namespace Vskstudio\Takt;
 
-final readonly class Revenue
+final class Revenue
 {
     public function __construct(
-        public string $amount,
-        public string $currency,
+        public readonly string $amount,
+        public readonly string $currency,
     ) {
         if (!preg_match('/^[A-Z]{3}$/', $currency)) {
             throw new \InvalidArgumentException("currency must be a 3-letter uppercase code, got: {$currency}");

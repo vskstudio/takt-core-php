@@ -1,16 +1,16 @@
 <?php
 namespace Vskstudio\Takt;
 
-final readonly class Options
+final class Options
 {
     public function __construct(
-        public string $domain,
-        public string $endpoint = '/api/event',
-        public bool $outbound = false,
-        public bool $files = false,
-        public bool $excludeLocalhost = true,
-        public ?string $nonce = null,
-        public Mode $mode = Mode::Inline,
+        public readonly string $domain,
+        public readonly string $endpoint = '/api/event',
+        public readonly bool $outbound = false,
+        public readonly bool $files = false,
+        public readonly bool $excludeLocalhost = true,
+        public readonly ?string $nonce = null,
+        public readonly Mode $mode = Mode::Inline,
     ) {
     }
 

@@ -75,4 +75,14 @@ final class TaktTest extends TestCase
         $takt->event('X');
         $this->assertTrue(true);
     }
+
+    public function test_non_string_props_are_coerced(): void
+    {
+        $mock = new \Http\Mock\Client();
+        $mock->addResponse(new \Nyholm\Psr7\Response(202));
+        $takt = $this->makeClient($mock);
+        $takt->event('Buy', ['count' => 3, 'paid' => true]);
+        $body = json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertSame(['count' => '3', 'paid' => '1'], $body['p']);
+    }
 }

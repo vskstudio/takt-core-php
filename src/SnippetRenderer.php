@@ -29,7 +29,7 @@ final class SnippetRenderer
 
     private function renderInline(): string
     {
-        $bundle = file_get_contents(__DIR__ . '/../resources/takt.js');
+        $bundle = str_replace('</script', '<\/script', file_get_contents(__DIR__ . '/../resources/takt.js'));
 
         return sprintf(
             "<script%s%s>%s</script>",

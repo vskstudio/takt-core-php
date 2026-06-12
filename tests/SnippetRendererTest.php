@@ -38,4 +38,23 @@ final class SnippetRendererTest extends TestCase
         $html = (new SnippetRenderer(new Options(domain: 'a"><x', mode: Mode::Cdn)))->render();
         $this->assertStringNotContainsString('a"><x', $html);
     }
+
+    public function test_asset_mode_emits_self_hosted_loader(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Asset)))->render();
+        $this->assertStringContainsString('src="/takt/takt.js"', $html);
+        $this->assertStringContainsString('data-domain="example.com"', $html);
+    }
+
+    public function test_exclude_localhost_false_emits_attr(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', excludeLocalhost: false, mode: Mode::Cdn)))->render();
+        $this->assertStringContainsString('data-exclude-localhost="false"', $html);
+    }
+
+    public function test_endpoint_attr_is_emitted(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', endpoint: '/collect', mode: Mode::Cdn)))->render();
+        $this->assertStringContainsString('data-endpoint="/collect"', $html);
+    }
 }
