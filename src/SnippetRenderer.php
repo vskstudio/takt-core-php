@@ -68,11 +68,13 @@ final class SnippetRenderer
     private function dataAttrs(): string
     {
         $o = $this->options;
-        $attrs = sprintf(
-            ' data-domain="%s" data-endpoint="%s"',
-            htmlspecialchars($o->domain, ENT_QUOTES),
-            htmlspecialchars($o->endpoint, ENT_QUOTES),
-        );
+        $attrs = sprintf(' data-domain="%s"', htmlspecialchars($o->domain, ENT_QUOTES));
+        // On n'émet data-endpoint que s'il est explicitement personnalisé : laissé
+        // au défaut, le tracker dérive lui-même {scriptOrigin}/api/event (collecte
+        // first-party anti-adblock) et retombe sur /api/event sans scriptOrigin.
+        if ($o->endpoint !== '/api/event') {
+            $attrs .= sprintf(' data-endpoint="%s"', htmlspecialchars($o->endpoint, ENT_QUOTES));
+        }
         if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
             $attrs .= sprintf(' data-script-origin="%s"', htmlspecialchars($o->scriptOrigin, ENT_QUOTES));
         }

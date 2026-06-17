@@ -59,10 +59,23 @@ final class SnippetRendererTest extends TestCase
         $this->assertStringContainsString('data-endpoint="/collect"', $html);
     }
 
+    public function test_default_endpoint_is_omitted(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Cdn)))->render();
+        $this->assertStringNotContainsString('data-endpoint', $html);
+    }
+
     public function test_script_origin_emits_data_attr(): void
     {
         $html = (new SnippetRenderer(new Options(domain: 'example.com', scriptOrigin: 'https://t.example.com', mode: Mode::Cdn)))->render();
         $this->assertStringContainsString('data-script-origin="https://t.example.com"', $html);
+    }
+
+    public function test_script_origin_with_default_endpoint_omits_data_endpoint(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', scriptOrigin: 'https://t.example.com', mode: Mode::Cdn)))->render();
+        $this->assertStringContainsString('data-script-origin="https://t.example.com"', $html);
+        $this->assertStringNotContainsString('data-endpoint', $html);
     }
 
     public function test_asset_mode_src_uses_script_origin(): void
