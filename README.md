@@ -39,7 +39,9 @@ use Vskstudio\Takt\Mode;
 new Options(domain: 'example.com', mode: Mode::Cdn, nonce: $cspNonce);
 ```
 
-The snippet honors `domain`, `endpoint`, `outbound`, `files` and `excludeLocalhost`. SPA tracking and Do-Not-Track respect are always on.
+The snippet honors `domain`, `endpoint`, `scriptOrigin`, `outbound`, `files` and `excludeLocalhost`. SPA tracking and Do-Not-Track respect are always on.
+
+`scriptOrigin` sets a first-party origin to serve the tracker + derive the endpoint from (`{origin}/api/event`) — your Takt domain or a custom domain to dodge ad-blockers (`endpoint` wins over it). In `Mode::Asset` the loader `src` is also served from that origin (`{origin}/takt/takt.js`).
 
 ## Takt (server-to-server client)
 

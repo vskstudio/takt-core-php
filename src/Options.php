@@ -7,6 +7,8 @@ final class Options
     public function __construct(
         public readonly string $domain,
         public readonly string $endpoint = '/api/event',
+        /** First-party origin to serve the tracker + derive the endpoint from ({origin}/api/event); endpoint wins. */
+        public readonly ?string $scriptOrigin = null,
         public readonly bool $outbound = false,
         public readonly bool $files = false,
         public readonly bool $excludeLocalhost = true,
@@ -27,6 +29,7 @@ final class Options
         return new self(
             domain: self::str($a['domain'] ?? ''),
             endpoint: self::str($a['endpoint'] ?? '/api/event'),
+            scriptOrigin: isset($a['scriptOrigin']) ? self::str($a['scriptOrigin']) : null,
             outbound: (bool) ($a['outbound'] ?? false),
             files: (bool) ($a['files'] ?? false),
             excludeLocalhost: (bool) ($a['excludeLocalhost'] ?? true),

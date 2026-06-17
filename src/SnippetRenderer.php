@@ -15,9 +15,18 @@ final class SnippetRenderer
     {
         return match ($this->options->mode) {
             Mode::Cdn => $this->renderLoader(self::CDN_BASE),
-            Mode::Asset => $this->renderLoader(self::ASSET_PATH),
+            Mode::Asset => $this->renderLoader($this->assetSrc()),
             Mode::Inline => $this->renderInline(),
         };
+    }
+
+    private function assetSrc(): string
+    {
+        $origin = $this->options->scriptOrigin;
+
+        return $origin !== null && $origin !== ''
+            ? rtrim($origin, '/') . self::ASSET_PATH
+            : self::ASSET_PATH;
     }
 
     private function renderLoader(string $src): string
@@ -64,6 +73,9 @@ final class SnippetRenderer
             htmlspecialchars($o->domain, ENT_QUOTES),
             htmlspecialchars($o->endpoint, ENT_QUOTES),
         );
+        if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
+            $attrs .= sprintf(' data-script-origin="%s"', htmlspecialchars($o->scriptOrigin, ENT_QUOTES));
+        }
         if ($o->outbound) {
             $attrs .= ' data-outbound';
         }

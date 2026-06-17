@@ -59,6 +59,19 @@ final class SnippetRendererTest extends TestCase
         $this->assertStringContainsString('data-endpoint="/collect"', $html);
     }
 
+    public function test_script_origin_emits_data_attr(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', scriptOrigin: 'https://t.example.com', mode: Mode::Cdn)))->render();
+        $this->assertStringContainsString('data-script-origin="https://t.example.com"', $html);
+    }
+
+    public function test_asset_mode_src_uses_script_origin(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', scriptOrigin: 'https://t.example.com/', mode: Mode::Asset)))->render();
+        $this->assertStringContainsString('src="https://t.example.com/takt/takt.js"', $html);
+        $this->assertStringContainsString('data-script-origin="https://t.example.com/"', $html);
+    }
+
     public function test_inline_neutralizes_script_close_case_insensitively(): void
     {
         $this->assertSame('<\\/script>', SnippetRenderer::neutralizeScriptClose('</script>'));
