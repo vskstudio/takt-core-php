@@ -32,7 +32,7 @@ The `Mode` enum controls how the bundle is delivered:
 - `Mode::Inline` (default) — embeds the bundle inline in a `<script>` tag that self-boots. No extra request, and CSP-friendly: pass `nonce:` in `Options` to emit a `nonce` attribute.
 - `Mode::Cdn` — emits a deferred loader pointing at the jsDelivr-hosted bundle.
 - `Mode::Asset` — emits a deferred loader pointing at a self-hosted `/takt/takt.auto.js`.
-- `Mode::Sdk` — emits an ES-module `<script type="module">import{init}…;init({…})</script>` that boots the full SDK. The only mode able to express `scrubUrl` (see below). The module is loaded from `{scriptOrigin}/takt/takt.esm.js` when `scriptOrigin` is set, otherwise from jsDelivr.
+- `Mode::Sdk` — emits an ES-module `<script type="module">import{init}…;init({…})</script>` that boots the full SDK. The only mode able to express `scrubUrl` (see below). The module is loaded from `{scriptOrigin}/takt/takt.esm.js` when `scriptOrigin` is set, otherwise from jsDelivr. Self-hosting it is your responsibility — the vendored bundle only ships `takt.auto.js` (for `Mode::Asset`), not the ES module.
 
 ```php
 use Vskstudio\Takt\Mode;
@@ -59,7 +59,7 @@ Each is `null` by default ("unset" — the tracker's own default applies); only 
 - `trackQuery: true` — keep the raw query string + hash in tracked URLs (`data-track-query`); off by default URLs are stripped.
 - `queryParams: ['utm_source', 'utm_medium']` — allowlist of params to keep when `trackQuery` is off (`data-query-params`).
 - `respectDnt: false` — stop honoring the browser Do-Not-Track header (`data-respect-dnt`).
-- `enabled: false` — kill-switch; renders a no-op snippet (`data-enabled`).
+- `enabled: false` — kill-switch; the snippet still renders but the tracker boots disabled (`data-enabled`).
 - `scrubUrl: '(u) => u.split("#")[0]'` — a **raw JS function** to rewrite every URL before it is sent.
 
 ```php
