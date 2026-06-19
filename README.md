@@ -32,6 +32,7 @@ The `Mode` enum controls how the bundle is delivered:
 - `Mode::Inline` (default) — embeds the bundle inline in a `<script>` tag that self-boots. No extra request, and CSP-friendly: pass `nonce:` in `Options` to emit a `nonce` attribute.
 - `Mode::Cdn` — emits a deferred loader pointing at the jsDelivr-hosted bundle.
 - `Mode::Asset` — emits a deferred loader pointing at a self-hosted `/takt/takt.auto.js`.
+- `Mode::Sdk` — emits an ES-module `<script type="module">import{init}…;init({…})</script>` that boots the full SDK. The only mode able to express `scrubUrl` (see below). The module is loaded from `{scriptOrigin}/takt/takt.esm.js` when `scriptOrigin` is set, otherwise from jsDelivr.
 
 ```php
 use Vskstudio\Takt\Mode;
@@ -49,6 +50,31 @@ Autocapture is opt-in and bundled into the vendored `takt.auto.js`. Each toggle 
 - `notFound: true` — 404 pageviews (`404`)
 
 `scriptOrigin` sets a first-party origin to serve the tracker + derive the endpoint from (`{origin}/api/event`) — your Takt domain or a custom domain to dodge ad-blockers (`endpoint` wins over it). In `Mode::Asset` the loader `src` is also served from that origin (`{origin}/takt/takt.auto.js`).
+
+### Advanced options
+
+Each is `null` by default ("unset" — the tracker's own default applies); only a non-default value is rendered.
+
+- `sampleRate: 0.5` — keep ~50% of hits (`data-sample-rate`).
+- `trackQuery: true` — keep the raw query string + hash in tracked URLs (`data-track-query`); off by default URLs are stripped.
+- `queryParams: ['utm_source', 'utm_medium']` — allowlist of params to keep when `trackQuery` is off (`data-query-params`).
+- `respectDnt: false` — stop honoring the browser Do-Not-Track header (`data-respect-dnt`).
+- `enabled: false` — kill-switch; renders a no-op snippet (`data-enabled`).
+- `scrubUrl: '(u) => u.split("#")[0]'` — a **raw JS function** to rewrite every URL before it is sent.
+
+```php
+new Options(domain: 'example.com', sampleRate: 0.5, queryParams: ['utm_source']);
+```
+
+`scrubUrl` cannot be expressed as a data-attribute, so it requires `Mode::Sdk`; constructing a `SnippetRenderer` with `scrubUrl` set in any other mode throws. It is injected **verbatim** into the page as JavaScript — it is **dev-controlled only**. Never build it from user input.
+
+```php
+new Options(
+    domain: 'example.com',
+    mode: Mode::Sdk,
+    scrubUrl: '(u) => u.split("?")[0]',
+);
+```
 
 ## Takt (server-to-server client)
 
