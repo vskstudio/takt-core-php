@@ -4,11 +4,18 @@ namespace Vskstudio\Takt;
 
 final class SnippetRenderer
 {
-    private const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.4.2/dist/takt.auto.js';
+    private const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.5.0/dist/takt.auto.js';
+    private const ESM_CDN = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.5.0/+esm';
     private const ASSET_PATH = '/takt/takt.auto.js';
+    private const ESM_PATH = '/takt/takt.esm.js';
 
     public function __construct(private readonly Options $options)
     {
+        // scrubUrl is a raw JS function: impossible to express as a data-attribute,
+        // so it is only valid in Mode::Sdk. Fail fast rather than silently drop it.
+        if ($options->scrubUrl !== null && $options->scrubUrl !== '' && $options->mode !== Mode::Sdk) {
+            throw new \InvalidArgumentException('Takt: scrubUrl is a JS function and requires Mode::Sdk; it cannot be rendered in inline/cdn/asset mode.');
+        }
     }
 
     public function render(): string
@@ -17,6 +24,7 @@ final class SnippetRenderer
             Mode::Cdn => $this->renderLoader(self::CDN_BASE),
             Mode::Asset => $this->renderLoader($this->assetSrc()),
             Mode::Inline => $this->renderInline(),
+            Mode::Sdk => $this->renderSdk(),
         };
     }
 
@@ -102,8 +110,100 @@ final class SnippetRenderer
         if (!$o->excludeLocalhost) {
             $attrs .= ' data-exclude-localhost="false"';
         }
+        // Advanced options. Booleans only emit their non-default case; the tracker
+        // applies its own default when the attribute is absent.
+        if ($o->enabled === false) {
+            $attrs .= ' data-enabled="false"';
+        }
+        if ($o->respectDnt === false) {
+            $attrs .= ' data-respect-dnt="false"';
+        }
+        if ($o->sampleRate !== null) {
+            $attrs .= sprintf(' data-sample-rate="%s"', htmlspecialchars(self::numberStr($o->sampleRate), ENT_QUOTES));
+        }
+        if ($o->trackQuery === true) {
+            $attrs .= ' data-track-query="true"';
+        }
+        if ($o->queryParams !== []) {
+            $attrs .= sprintf(' data-query-params="%s"', htmlspecialchars(implode(',', $o->queryParams), ENT_QUOTES));
+        }
 
         return $attrs;
+    }
+
+    private function renderSdk(): string
+    {
+        $o = $this->options;
+        $arg = $this->sdkConfigJson();
+        if ($o->scrubUrl !== null && $o->scrubUrl !== '') {
+            // scrubUrl is grafted as a raw JS function, outside the JSON literal.
+            $arg = sprintf('Object.assign(%s,{scrubUrl:%s})', $arg, $o->scrubUrl);
+        }
+        $body = sprintf('import{init}from%s;init(%s)', json_encode($this->esmSrc()), $arg);
+
+        return sprintf('<script type="module"%s>%s</script>', $this->nonceAttr(), self::neutralizeScriptClose($body));
+    }
+
+    private function esmSrc(): string
+    {
+        $origin = $this->options->scriptOrigin;
+
+        return $origin !== null && $origin !== ''
+            ? rtrim($origin, '/') . self::ESM_PATH
+            : self::ESM_CDN;
+    }
+
+    private function sdkConfigJson(): string
+    {
+        $o = $this->options;
+        $c = ['domain' => $o->domain];
+        if ($o->endpoint !== '/api/event') {
+            $c['endpoint'] = $o->endpoint;
+        }
+        if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
+            $c['scriptOrigin'] = $o->scriptOrigin;
+        }
+        if (!$o->excludeLocalhost) {
+            $c['excludeLocalhost'] = false;
+        }
+        if ($o->respectDnt === false) {
+            $c['respectDnt'] = false;
+        }
+        if ($o->enabled === false) {
+            $c['enabled'] = false;
+        }
+        if ($o->sampleRate !== null) {
+            $c['sampleRate'] = $o->sampleRate;
+        }
+        if ($o->trackQuery === true) {
+            $c['trackQuery'] = true;
+        }
+        if ($o->queryParams !== []) {
+            $c['queryParams'] = $o->queryParams;
+        }
+        if ($o->outbound) {
+            $c['outbound'] = true;
+        }
+        if ($o->files) {
+            $c['files'] = true;
+        }
+        if ($o->fileExtensions !== []) {
+            $c['fileExtensions'] = $o->fileExtensions;
+        }
+        if ($o->notFound) {
+            $c['notFound'] = true;
+        }
+        if ($o->tagged) {
+            $c['tagged'] = true;
+        }
+
+        return json_encode($c, JSON_THROW_ON_ERROR);
+    }
+
+    /** Render a float without a trailing ".0" (0.5 → "0.5", 1.0 → "1"). */
+    private static function numberStr(float $n): string
+    {
+        return rtrim(rtrim(sprintf('%.10F', $n), '0'), '.');
     }
 
     private function nonceAttr(): string

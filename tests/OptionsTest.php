@@ -21,6 +21,12 @@ final class OptionsTest extends TestCase
         $this->assertFalse($o->notFound);
         $this->assertFalse($o->tagged);
         $this->assertSame([], $o->fileExtensions);
+        $this->assertNull($o->sampleRate);
+        $this->assertNull($o->trackQuery);
+        $this->assertSame([], $o->queryParams);
+        $this->assertNull($o->respectDnt);
+        $this->assertNull($o->enabled);
+        $this->assertNull($o->scrubUrl);
     }
 
     public function test_from_array_overrides(): void
@@ -57,5 +63,48 @@ final class OptionsTest extends TestCase
     {
         $o = Options::fromArray(['domain' => 'a.com', 'scriptOrigin' => 'https://t.a.com']);
         $this->assertSame('https://t.a.com', $o->scriptOrigin);
+    }
+
+    public function test_from_array_parses_advanced_options_snake_case(): void
+    {
+        $o = Options::fromArray([
+            'domain' => 'a.com',
+            'sample_rate' => '0.25',
+            'track_query' => true,
+            'query_params' => ['utm_source', ' utm_medium ', '', 9],
+            'respect_dnt' => false,
+            'enabled' => false,
+            'scrub_url' => '(u)=>u.split("?")[0]',
+        ]);
+        $this->assertSame(0.25, $o->sampleRate);
+        $this->assertTrue($o->trackQuery);
+        $this->assertSame(['utm_source', 'utm_medium', '9'], $o->queryParams);
+        $this->assertFalse($o->respectDnt);
+        $this->assertFalse($o->enabled);
+        $this->assertSame('(u)=>u.split("?")[0]', $o->scrubUrl);
+    }
+
+    public function test_from_array_parses_advanced_options_camel_case(): void
+    {
+        $o = Options::fromArray([
+            'domain' => 'a.com',
+            'sampleRate' => 0.5,
+            'trackQuery' => false,
+            'queryParams' => ['ref'],
+            'respectDnt' => true,
+            'enabled' => true,
+        ]);
+        $this->assertSame(0.5, $o->sampleRate);
+        $this->assertFalse($o->trackQuery);
+        $this->assertSame(['ref'], $o->queryParams);
+        $this->assertTrue($o->respectDnt);
+        $this->assertTrue($o->enabled);
+        $this->assertNull($o->scrubUrl);
+    }
+
+    public function test_from_array_parses_sdk_mode(): void
+    {
+        $o = Options::fromArray(['domain' => 'a.com', 'mode' => 'sdk']);
+        $this->assertSame(Mode::Sdk, $o->mode);
     }
 }
