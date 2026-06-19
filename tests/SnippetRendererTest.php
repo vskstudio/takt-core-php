@@ -136,4 +136,99 @@ final class SnippetRendererTest extends TestCase
         $this->assertSame('<\\/SCRIPT >', SnippetRenderer::neutralizeScriptClose('</SCRIPT >'));
         $this->assertSame('var takt={};', SnippetRenderer::neutralizeScriptClose('var takt={};'));
     }
+
+    public function test_advanced_options_emit_data_attrs(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            mode: Mode::Cdn,
+            sampleRate: 0.5,
+            trackQuery: true,
+            queryParams: ['utm_source', 'utm_medium'],
+            respectDnt: false,
+            enabled: false,
+        )))->render();
+        $this->assertStringContainsString('data-enabled="false"', $html);
+        $this->assertStringContainsString('data-respect-dnt="false"', $html);
+        $this->assertStringContainsString('data-sample-rate="0.5"', $html);
+        $this->assertStringContainsString('data-track-query="true"', $html);
+        $this->assertStringContainsString('data-query-params="utm_source,utm_medium"', $html);
+    }
+
+    public function test_advanced_option_defaults_are_omitted(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            mode: Mode::Cdn,
+            trackQuery: false,
+            respectDnt: true,
+            enabled: true,
+        )))->render();
+        $this->assertStringNotContainsString('data-enabled', $html);
+        $this->assertStringNotContainsString('data-respect-dnt', $html);
+        $this->assertStringNotContainsString('data-sample-rate', $html);
+        $this->assertStringNotContainsString('data-track-query', $html);
+        $this->assertStringNotContainsString('data-query-params', $html);
+    }
+
+    public function test_sample_rate_renders_without_trailing_zero(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Cdn, sampleRate: 1.0)))->render();
+        $this->assertStringContainsString('data-sample-rate="1"', $html);
+    }
+
+    public function test_sdk_mode_emits_module_import_and_init(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            mode: Mode::Sdk,
+            outbound: true,
+            sampleRate: 0.25,
+            queryParams: ['ref'],
+        )))->render();
+        $this->assertStringContainsString('<script type="module"', $html);
+        $this->assertStringContainsString('import{init}from', $html);
+        $this->assertStringContainsString('@vskstudio\/takt-core@0.5.0\/+esm', $html);
+        $this->assertStringContainsString('init({', $html);
+        $this->assertStringContainsString('"domain":"example.com"', $html);
+        $this->assertStringContainsString('"sampleRate":0.25', $html);
+        $this->assertStringContainsString('"queryParams":["ref"]', $html);
+        $this->assertStringContainsString('"outbound":true', $html);
+        $this->assertStringNotContainsString(' src=', $html);
+    }
+
+    public function test_sdk_mode_uses_script_origin_esm_path(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', scriptOrigin: 'https://t.example.com/', mode: Mode::Sdk)))->render();
+        $this->assertStringContainsString('t.example.com\/takt\/takt.esm.js', $html);
+        $this->assertStringContainsString('"scriptOrigin":"https:\/\/t.example.com\/"', $html);
+    }
+
+    public function test_sdk_mode_grafts_scrub_url_as_raw_js(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            mode: Mode::Sdk,
+            scrubUrl: '(u)=>u.split("#")[0]',
+        )))->render();
+        $this->assertStringContainsString('Object.assign({', $html);
+        $this->assertStringContainsString('scrubUrl:(u)=>u.split("#")[0]', $html);
+    }
+
+    public function test_scrub_url_outside_sdk_mode_throws(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Inline, scrubUrl: '(u)=>u'));
+    }
+
+    public function test_sdk_mode_neutralizes_script_close_in_scrub_url(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            mode: Mode::Sdk,
+            scrubUrl: '(u)=>{return "</script>"}',
+        )))->render();
+        $this->assertStringNotContainsString('</script>"', $html);
+        $this->assertStringContainsString('<\\/script>', $html);
+    }
 }
