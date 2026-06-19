@@ -4,8 +4,8 @@ namespace Vskstudio\Takt;
 
 final class SnippetRenderer
 {
-    private const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core/dist/takt.js';
-    private const ASSET_PATH = '/takt/takt.js';
+    private const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.4.2/dist/takt.auto.js';
+    private const ASSET_PATH = '/takt/takt.auto.js';
 
     public function __construct(private readonly Options $options)
     {
@@ -41,7 +41,7 @@ final class SnippetRenderer
 
     private function renderInline(): string
     {
-        $path = __DIR__ . '/../resources/takt.js';
+        $path = __DIR__ . '/../resources/takt.auto.js';
         $bundle = file_get_contents($path);
         if ($bundle === false) {
             throw new \RuntimeException("Takt: unable to read inline bundle at {$path}");
@@ -78,11 +78,26 @@ final class SnippetRenderer
         if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
             $attrs .= sprintf(' data-script-origin="%s"', htmlspecialchars($o->scriptOrigin, ENT_QUOTES));
         }
+        // Autocapture is opt-in and driven by a single data-auto token list read
+        // by takt.auto.js : outbound clicks, downloads, HTML-tagged events, 404.
+        $auto = [];
         if ($o->outbound) {
-            $attrs .= ' data-outbound';
+            $auto[] = 'outbound';
         }
         if ($o->files) {
-            $attrs .= ' data-files';
+            $auto[] = 'downloads';
+        }
+        if ($o->tagged) {
+            $auto[] = 'tagged';
+        }
+        if ($o->notFound) {
+            $auto[] = '404';
+        }
+        if ($auto !== []) {
+            $attrs .= sprintf(' data-auto="%s"', implode(',', $auto));
+        }
+        if ($o->fileExtensions !== []) {
+            $attrs .= sprintf(' data-downloads-ext="%s"', htmlspecialchars(implode(',', $o->fileExtensions), ENT_QUOTES));
         }
         if (!$o->excludeLocalhost) {
             $attrs .= ' data-exclude-localhost="false"';

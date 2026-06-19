@@ -13,9 +13,11 @@ final class SnippetRendererTest extends TestCase
     {
         $html = (new SnippetRenderer(new Options(domain: 'example.com', outbound: true, mode: Mode::Cdn)))->render();
         $this->assertStringContainsString('cdn.jsdelivr.net/npm/@vskstudio/takt-core', $html);
+        $this->assertStringContainsString('takt.auto.js', $html);
         $this->assertStringContainsString('data-domain="example.com"', $html);
-        $this->assertStringContainsString('data-outbound', $html);
+        $this->assertStringContainsString('data-auto="outbound"', $html);
         $this->assertStringNotContainsString('data-files', $html);
+        $this->assertStringNotContainsString('data-outbound', $html);
     }
 
     public function test_inline_mode_embeds_bundle_with_data_attrs(): void
@@ -23,9 +25,52 @@ final class SnippetRendererTest extends TestCase
         $html = (new SnippetRenderer(new Options(domain: 'example.com', files: true, mode: Mode::Inline)))->render();
         $this->assertStringContainsString('<script', $html);
         $this->assertStringContainsString('data-domain="example.com"', $html);
-        $this->assertStringContainsString('data-files', $html);
+        $this->assertStringContainsString('data-auto="downloads"', $html);
         $this->assertStringContainsString('var takt=', $html);
         $this->assertStringNotContainsString(' src=', $html);
+    }
+
+    public function test_data_auto_lists_all_enabled_features_in_order(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            outbound: true,
+            files: true,
+            mode: Mode::Cdn,
+            notFound: true,
+            tagged: true,
+        )))->render();
+        $this->assertStringContainsString('data-auto="outbound,downloads,tagged,404"', $html);
+    }
+
+    public function test_no_autocapture_omits_data_auto(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Cdn)))->render();
+        $this->assertStringNotContainsString('data-auto', $html);
+    }
+
+    public function test_not_found_only_emits_404_token(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Cdn, notFound: true)))->render();
+        $this->assertStringContainsString('data-auto="404"', $html);
+    }
+
+    public function test_file_extensions_emit_downloads_ext(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            files: true,
+            mode: Mode::Cdn,
+            fileExtensions: ['pdf', 'docx'],
+        )))->render();
+        $this->assertStringContainsString('data-auto="downloads"', $html);
+        $this->assertStringContainsString('data-downloads-ext="pdf,docx"', $html);
+    }
+
+    public function test_file_extensions_empty_omits_downloads_ext(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', files: true, mode: Mode::Cdn)))->render();
+        $this->assertStringNotContainsString('data-downloads-ext', $html);
     }
 
     public function test_nonce_is_applied(): void
@@ -43,7 +88,7 @@ final class SnippetRendererTest extends TestCase
     public function test_asset_mode_emits_self_hosted_loader(): void
     {
         $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Asset)))->render();
-        $this->assertStringContainsString('src="/takt/takt.js"', $html);
+        $this->assertStringContainsString('src="/takt/takt.auto.js"', $html);
         $this->assertStringContainsString('data-domain="example.com"', $html);
     }
 
@@ -81,7 +126,7 @@ final class SnippetRendererTest extends TestCase
     public function test_asset_mode_src_uses_script_origin(): void
     {
         $html = (new SnippetRenderer(new Options(domain: 'example.com', scriptOrigin: 'https://t.example.com/', mode: Mode::Asset)))->render();
-        $this->assertStringContainsString('src="https://t.example.com/takt/takt.js"', $html);
+        $this->assertStringContainsString('src="https://t.example.com/takt/takt.auto.js"', $html);
         $this->assertStringContainsString('data-script-origin="https://t.example.com/"', $html);
     }
 

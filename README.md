@@ -31,7 +31,7 @@ The `Mode` enum controls how the bundle is delivered:
 
 - `Mode::Inline` (default) — embeds the bundle inline in a `<script>` tag that self-boots. No extra request, and CSP-friendly: pass `nonce:` in `Options` to emit a `nonce` attribute.
 - `Mode::Cdn` — emits a deferred loader pointing at the jsDelivr-hosted bundle.
-- `Mode::Asset` — emits a deferred loader pointing at a self-hosted `/takt/takt.js`.
+- `Mode::Asset` — emits a deferred loader pointing at a self-hosted `/takt/takt.auto.js`.
 
 ```php
 use Vskstudio\Takt\Mode;
@@ -39,9 +39,16 @@ use Vskstudio\Takt\Mode;
 new Options(domain: 'example.com', mode: Mode::Cdn, nonce: $cspNonce);
 ```
 
-The snippet honors `domain`, `endpoint`, `scriptOrigin`, `outbound`, `files` and `excludeLocalhost`. SPA tracking and Do-Not-Track respect are always on.
+The snippet honors `domain`, `endpoint`, `scriptOrigin` and `excludeLocalhost`. SPA tracking and Do-Not-Track respect are always on.
 
-`scriptOrigin` sets a first-party origin to serve the tracker + derive the endpoint from (`{origin}/api/event`) — your Takt domain or a custom domain to dodge ad-blockers (`endpoint` wins over it). In `Mode::Asset` the loader `src` is also served from that origin (`{origin}/takt/takt.js`).
+Autocapture is opt-in and bundled into the vendored `takt.auto.js`. Each toggle adds a token to a single `data-auto` attribute the tracker reads:
+
+- `outbound: true` — outbound link clicks (`outbound`)
+- `files: true` — download clicks (`downloads`); narrow the matched extensions with `fileExtensions: ['pdf', 'zip']`, emitted as `data-downloads-ext`
+- `tagged: true` — elements tagged in HTML with `data-takt-event` (`tagged`)
+- `notFound: true` — 404 pageviews (`404`)
+
+`scriptOrigin` sets a first-party origin to serve the tracker + derive the endpoint from (`{origin}/api/event`) — your Takt domain or a custom domain to dodge ad-blockers (`endpoint` wins over it). In `Mode::Asset` the loader `src` is also served from that origin (`{origin}/takt/takt.auto.js`).
 
 ## Takt (server-to-server client)
 
