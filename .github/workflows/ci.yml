@@ -32,4 +32,4 @@ jobs:
           persist-credentials: false
       - run: ./bin/sync-bundle.sh
       - name: fail if vendored bundle drifted
-        run: git diff --exit-code resources/takt.js
+        run: git diff --exit-code resources/takt.auto.js

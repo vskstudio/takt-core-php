@@ -18,6 +18,9 @@ final class OptionsTest extends TestCase
         $this->assertNull($o->nonce);
         $this->assertNull($o->scriptOrigin);
         $this->assertSame(Mode::Inline, $o->mode);
+        $this->assertFalse($o->notFound);
+        $this->assertFalse($o->tagged);
+        $this->assertSame([], $o->fileExtensions);
     }
 
     public function test_from_array_overrides(): void
@@ -25,6 +28,29 @@ final class OptionsTest extends TestCase
         $o = Options::fromArray(['domain' => 'a.com', 'outbound' => true, 'mode' => 'cdn']);
         $this->assertTrue($o->outbound);
         $this->assertSame(Mode::Cdn, $o->mode);
+    }
+
+    public function test_from_array_parses_autocapture_options(): void
+    {
+        $o = Options::fromArray([
+            'domain' => 'a.com',
+            'not_found' => true,
+            'tagged' => true,
+            'file_extensions' => ['pdf', ' docx ', '', 7],
+        ]);
+        $this->assertTrue($o->notFound);
+        $this->assertTrue($o->tagged);
+        $this->assertSame(['pdf', 'docx', '7'], $o->fileExtensions);
+    }
+
+    public function test_from_array_reads_snake_and_camel_keys(): void
+    {
+        $snake = Options::fromArray(['domain' => 'a.com', 'exclude_localhost' => false, 'not_found' => true]);
+        $this->assertFalse($snake->excludeLocalhost);
+        $this->assertTrue($snake->notFound);
+
+        $camel = Options::fromArray(['domain' => 'a.com', 'fileExtensions' => ['zip']]);
+        $this->assertSame(['zip'], $camel->fileExtensions);
     }
 
     public function test_from_array_parses_script_origin(): void
