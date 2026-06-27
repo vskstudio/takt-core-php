@@ -70,6 +70,23 @@ final class TaktTest extends TestCase
         $this->assertSame('Mozilla/5.0', $req->getHeaderLine('User-Agent'));
     }
 
+    public function test_strips_crlf_from_forwarded_headers(): void
+    {
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = $this->makeClient($mock)->withVisitor(
+            "203.0.113.7\r\nX-Injected: 1",
+            "Evil\r\nSet-Cookie: a=b",
+        );
+        $takt->pageview('https://example.com/');
+
+        $req = $mock->getLastRequest();
+        $this->assertSame('203.0.113.7X-Injected: 1', $req->getHeaderLine('X-Forwarded-For'));
+        $this->assertSame('EvilSet-Cookie: a=b', $req->getHeaderLine('User-Agent'));
+        $this->assertFalse($req->hasHeader('X-Injected'));
+        $this->assertFalse($req->hasHeader('Set-Cookie'));
+    }
+
     public function test_strict_mode_throws_on_non_202(): void
     {
         $mock = new Client();

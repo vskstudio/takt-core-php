@@ -82,13 +82,13 @@ final class Takt
                 ));
 
             if ($this->apiKey !== null) {
-                $request = $request->withHeader('Authorization', 'Bearer ' . $this->apiKey);
+                $request = $request->withHeader('Authorization', 'Bearer ' . self::headerSafe($this->apiKey));
             }
             if ($this->userIp !== null) {
-                $request = $request->withHeader('X-Forwarded-For', $this->userIp);
+                $request = $request->withHeader('X-Forwarded-For', self::headerSafe($this->userIp));
             }
             if ($this->userAgent !== null) {
-                $request = $request->withHeader('User-Agent', $this->userAgent);
+                $request = $request->withHeader('User-Agent', self::headerSafe($this->userAgent));
             }
 
             $response = $this->httpClient->sendRequest($request);
@@ -101,5 +101,15 @@ final class Takt
                 throw $e instanceof \RuntimeException ? $e : new \RuntimeException($e->getMessage(), 0, $e);
             }
         }
+    }
+
+    /**
+     * Strip control characters (incl. CR/LF) from an outgoing header value, so a
+     * spoofed buyer IP/User-Agent or a mangled key can never split or inject
+     * headers — defense in depth on top of the PSR-7 layer's own validation.
+     */
+    private static function headerSafe(string $value): string
+    {
+        return preg_replace('/[\x00-\x1F\x7F]/', '', $value) ?? '';
     }
 }
