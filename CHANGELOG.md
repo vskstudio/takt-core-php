@@ -1,6 +1,6 @@
 # vskstudio/takt-core-php
 
-## Unreleased
+## 0.4.0
 
 ### Minor Changes
 
