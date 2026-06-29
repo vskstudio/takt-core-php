@@ -42,6 +42,14 @@ new Options(domain: 'example.com', mode: Mode::Cdn, nonce: $cspNonce);
 
 The snippet honors `domain`, `endpoint`, `scriptOrigin` and `excludeLocalhost`. SPA tracking and Do-Not-Track respect are always on.
 
+### Where events are sent
+
+By default the snippet ingests to the hosted Takt origin — `https://taktlytics.com/api/event` — so a bare setup works out of the box, including on static sites with no backend. To override:
+
+- `endpoint: '/api/event'` — restore the same-origin first-party proxy (you forward `/api/event` to Takt from your own server). Anti-adblock, but requires a backend.
+- `endpoint: 'https://collect.example.com/api/event'` — any custom absolute collector URL.
+- `scriptOrigin: 'https://t.example.com'` — let the tracker derive `{scriptOrigin}/api/event` (first-party, anti-adblock). `endpoint` wins over `scriptOrigin`.
+
 Autocapture is opt-in and bundled into the vendored `takt.auto.js`. Each toggle adds a token to a single `data-auto` attribute the tracker reads:
 
 - `outbound: true` — outbound link clicks (`outbound`)
@@ -84,6 +92,8 @@ Send events directly from your backend, attributed to the real visitor.
 use Vskstudio\Takt\Takt;
 use Vskstudio\Takt\Revenue;
 
+// $endpoint is a base origin (NOT a full path); '/api/event' is appended for you.
+// Use Options::HOSTED_ORIGIN ('https://taktlytics.com') for the hosted collector.
 $takt = new Takt($endpoint, 'example.com', $apiKey);
 
 $takt

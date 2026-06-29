@@ -18,6 +18,14 @@ final class Takt
     private RequestFactoryInterface $requestFactory;
     private StreamFactoryInterface $streamFactory;
 
+    /**
+     * @param string $endpoint Base ingest origin (NOT a full path); '/api/event'
+     *   is appended on each send. Pass {@see Options::HOSTED_ORIGIN}
+     *   ('https://taktlytics.com') to target the hosted Takt collector, or your
+     *   own first-party origin. This is a required base origin with no default:
+     *   unlike the client-side snippet it is always explicit, so there is no
+     *   default to migrate and no risk of a doubled '/api/event/api/event'.
+     */
     public function __construct(
         private readonly string $endpoint,
         private readonly string $domain,

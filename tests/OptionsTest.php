@@ -11,7 +11,8 @@ final class OptionsTest extends TestCase
     public function test_defaults(): void
     {
         $o = new Options(domain: 'example.com');
-        $this->assertSame('/api/event', $o->endpoint);
+        $this->assertSame('https://taktlytics.com/api/event', $o->endpoint);
+        $this->assertSame(Options::HOSTED_ENDPOINT, $o->endpoint);
         $this->assertFalse($o->outbound);
         $this->assertFalse($o->files);
         $this->assertTrue($o->excludeLocalhost);
@@ -57,6 +58,18 @@ final class OptionsTest extends TestCase
 
         $camel = Options::fromArray(['domain' => 'a.com', 'fileExtensions' => ['zip']]);
         $this->assertSame(['zip'], $camel->fileExtensions);
+    }
+
+    public function test_from_array_defaults_endpoint_to_hosted_origin(): void
+    {
+        $o = Options::fromArray(['domain' => 'a.com']);
+        $this->assertSame(Options::HOSTED_ENDPOINT, $o->endpoint);
+    }
+
+    public function test_from_array_keeps_same_origin_proxy_override(): void
+    {
+        $o = Options::fromArray(['domain' => 'a.com', 'endpoint' => '/api/event']);
+        $this->assertSame('/api/event', $o->endpoint);
     }
 
     public function test_from_array_parses_script_origin(): void

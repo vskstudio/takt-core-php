@@ -73,15 +73,36 @@ final class SnippetRenderer
         return preg_replace('#</(script)#i', '<\\\\/$1', $js) ?? $js;
     }
 
+    /**
+     * Decide the endpoint to render, or null to omit it entirely.
+     *
+     * - A custom endpoint (anything other than the hosted default, including the
+     *   same-origin proxy '/api/event') is always emitted verbatim.
+     * - The hosted default with a scriptOrigin set is omitted, so the tracker
+     *   derives {scriptOrigin}/api/event (first-party, anti-adblock).
+     * - The hosted default with no scriptOrigin is pinned explicitly to the
+     *   hosted origin, so a bare snippet ingests to https://taktlytics.com/api/event
+     *   regardless of the vendored tracker version's own built-in default.
+     */
+    private function resolvedEndpoint(): ?string
+    {
+        $o = $this->options;
+        if ($o->endpoint !== Options::HOSTED_ENDPOINT) {
+            return $o->endpoint;
+        }
+        if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
+            return null;
+        }
+
+        return Options::HOSTED_ENDPOINT;
+    }
+
     private function dataAttrs(): string
     {
         $o = $this->options;
         $attrs = sprintf(' data-domain="%s"', htmlspecialchars($o->domain, ENT_QUOTES));
-        // On n'émet data-endpoint que s'il est explicitement personnalisé : laissé
-        // au défaut, le tracker dérive lui-même {scriptOrigin}/api/event (collecte
-        // first-party anti-adblock) et retombe sur /api/event sans scriptOrigin.
-        if ($o->endpoint !== '/api/event') {
-            $attrs .= sprintf(' data-endpoint="%s"', htmlspecialchars($o->endpoint, ENT_QUOTES));
+        if (($endpoint = $this->resolvedEndpoint()) !== null) {
+            $attrs .= sprintf(' data-endpoint="%s"', htmlspecialchars($endpoint, ENT_QUOTES));
         }
         if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
             $attrs .= sprintf(' data-script-origin="%s"', htmlspecialchars($o->scriptOrigin, ENT_QUOTES));
@@ -157,8 +178,8 @@ final class SnippetRenderer
     {
         $o = $this->options;
         $c = ['domain' => $o->domain];
-        if ($o->endpoint !== '/api/event') {
-            $c['endpoint'] = $o->endpoint;
+        if (($endpoint = $this->resolvedEndpoint()) !== null) {
+            $c['endpoint'] = $endpoint;
         }
         if ($o->scriptOrigin !== null && $o->scriptOrigin !== '') {
             $c['scriptOrigin'] = $o->scriptOrigin;

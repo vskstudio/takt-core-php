@@ -104,10 +104,22 @@ final class SnippetRendererTest extends TestCase
         $this->assertStringContainsString('data-endpoint="/collect"', $html);
     }
 
-    public function test_default_endpoint_is_omitted(): void
+    public function test_default_endpoint_targets_hosted_origin(): void
     {
         $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Cdn)))->render();
-        $this->assertStringNotContainsString('data-endpoint', $html);
+        $this->assertStringContainsString('data-endpoint="https://taktlytics.com/api/event"', $html);
+    }
+
+    public function test_same_origin_proxy_endpoint_is_emitted(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', endpoint: '/api/event', mode: Mode::Cdn)))->render();
+        $this->assertStringContainsString('data-endpoint="/api/event"', $html);
+    }
+
+    public function test_sdk_mode_defaults_endpoint_to_hosted_origin(): void
+    {
+        $html = (new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Sdk)))->render();
+        $this->assertStringContainsString('"endpoint":"https:\/\/taktlytics.com\/api\/event"', $html);
     }
 
     public function test_script_origin_emits_data_attr(): void

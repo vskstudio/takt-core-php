@@ -1,5 +1,20 @@
 # vskstudio/takt-core-php
 
+## Unreleased
+
+### Minor Changes
+
+- The default client-side ingest endpoint is now the hosted Takt origin
+  (`https://taktlytics.com/api/event`) instead of the same-origin relative path
+  `/api/event`, mirroring `@vskstudio/takt-core@0.6.0`. A bare `Options` /
+  `SnippetRenderer` setup now works out of the box, including on static sites
+  with no backend (the old `/api/event` default 405s there). To restore the
+  same-origin first-party proxy, pass `endpoint: '/api/event'`; `endpoint` and
+  `scriptOrigin` overrides keep working as before. A new `Options::HOSTED_ORIGIN`
+  / `Options::HOSTED_ENDPOINT` constant holds the hosted origin. The
+  server-to-server `Takt` client is unchanged: its `$endpoint` is a required base
+  origin (it appends `/api/event`), so it has no default to migrate.
+
 ## 0.3.2
 
 ### Patch Changes

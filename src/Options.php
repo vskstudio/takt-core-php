@@ -4,14 +4,25 @@ namespace Vskstudio\Takt;
 
 final class Options
 {
+    /** Hosted Takt origin used as the default ingest target out of the box. */
+    public const HOSTED_ORIGIN = 'https://taktlytics.com';
+
+    /** Full default ingest endpoint on the hosted Takt origin. */
+    public const HOSTED_ENDPOINT = self::HOSTED_ORIGIN . '/api/event';
+
     /**
      * @param list<string> $fileExtensions
      * @param list<string> $queryParams
+     *
+     * @param string $endpoint Where the tracker posts events. Defaults to the
+     *   hosted Takt origin ({@see self::HOSTED_ENDPOINT}) so a bare setup works
+     *   on static sites with no backend. Pass '/api/event' to restore the
+     *   same-origin first-party proxy, or any absolute URL for a custom collector.
      */
     public function __construct(
         public readonly string $domain,
-        public readonly string $endpoint = '/api/event',
-        /** First-party origin to serve the tracker + derive the endpoint from ({origin}/api/event); endpoint wins. */
+        public readonly string $endpoint = self::HOSTED_ENDPOINT,
+        /** First-party origin to serve the tracker + derive the endpoint from ({origin}/api/event); overrides the hosted default, but endpoint wins over it. */
         public readonly ?string $scriptOrigin = null,
         public readonly bool $outbound = false,
         public readonly bool $files = false,
@@ -45,7 +56,7 @@ final class Options
 
         return new self(
             domain: self::str($a['domain'] ?? ''),
-            endpoint: self::str($a['endpoint'] ?? '/api/event'),
+            endpoint: self::str($a['endpoint'] ?? self::HOSTED_ENDPOINT),
             scriptOrigin: isset($a['scriptOrigin']) ? self::str($a['scriptOrigin']) : null,
             outbound: (bool) ($a['outbound'] ?? false),
             files: (bool) ($a['files'] ?? false),
