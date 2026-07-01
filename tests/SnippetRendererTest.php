@@ -200,7 +200,7 @@ final class SnippetRendererTest extends TestCase
         )))->render();
         $this->assertStringContainsString('<script type="module"', $html);
         $this->assertStringContainsString('import{init}from', $html);
-        $this->assertStringContainsString('@vskstudio\/takt-core@0.5.0\/+esm', $html);
+        $this->assertStringContainsString('@vskstudio\/takt-core@0.8.0\/+esm', $html);
         $this->assertStringContainsString('init({', $html);
         $this->assertStringContainsString('"domain":"example.com"', $html);
         $this->assertStringContainsString('"sampleRate":0.25', $html);
@@ -231,6 +231,22 @@ final class SnippetRendererTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Inline, scrubUrl: '(u)=>u'));
+    }
+
+    public function test_sdk_mode_emits_exclude_as_json_array(): void
+    {
+        $html = (new SnippetRenderer(new Options(
+            domain: 'example.com',
+            mode: Mode::Sdk,
+            exclude: ['/app', '/account'],
+        )))->render();
+        $this->assertStringContainsString('"exclude":["\/app","\/account"]', $html);
+    }
+
+    public function test_exclude_outside_sdk_mode_throws(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new SnippetRenderer(new Options(domain: 'example.com', mode: Mode::Cdn, exclude: ['/app']));
     }
 
     public function test_sdk_mode_neutralizes_script_close_in_scrub_url(): void

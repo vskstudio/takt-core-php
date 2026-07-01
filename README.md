@@ -69,12 +69,15 @@ Each is `null` by default ("unset" — the tracker's own default applies); only 
 - `respectDnt: false` — stop honoring the browser Do-Not-Track header (`data-respect-dnt`).
 - `enabled: false` — kill-switch; the snippet still renders but the tracker boots disabled (`data-enabled`).
 - `scrubUrl: '(u) => u.split("#")[0]'` — a **raw JS function** to rewrite every URL before it is sent.
+- `exclude: ['/app', '/account']` — path prefixes never tracked (segment-bounded: `/app` matches `/app` and `/app/…` but not `/application`), checked at send time so it holds across SPA navigation.
 
 ```php
 new Options(domain: 'example.com', sampleRate: 0.5, queryParams: ['utm_source']);
 ```
 
 `scrubUrl` cannot be expressed as a data-attribute, so it requires `Mode::Sdk`; constructing a `SnippetRenderer` with `scrubUrl` set in any other mode throws. It is injected **verbatim** into the page as JavaScript — it is **dev-controlled only**. Never build it from user input.
+
+`exclude` likewise lives only in the full SDK (the ≤ 1 kB minimal snippet omits it), so it too requires `Mode::Sdk`; setting it in `inline`/`cdn`/`asset` mode throws rather than silently dropping the exclusion — a dropped privacy control would leak the very paths it is meant to hide.
 
 ```php
 new Options(

@@ -88,10 +88,12 @@ final class OptionsTest extends TestCase
             'respect_dnt' => false,
             'enabled' => false,
             'scrub_url' => '(u)=>u.split("?")[0]',
+            'exclude' => ['/app', ' /account ', '', 5],
         ]);
         $this->assertSame(0.25, $o->sampleRate);
         $this->assertTrue($o->trackQuery);
         $this->assertSame(['utm_source', 'utm_medium', '9'], $o->queryParams);
+        $this->assertSame(['/app', '/account', '5'], $o->exclude);
         $this->assertFalse($o->respectDnt);
         $this->assertFalse($o->enabled);
         $this->assertSame('(u)=>u.split("?")[0]', $o->scrubUrl);

@@ -13,6 +13,7 @@ final class Options
     /**
      * @param list<string> $fileExtensions
      * @param list<string> $queryParams
+     * @param list<string> $exclude
      *
      * @param string $endpoint Where the tracker posts events. Defaults to the
      *   hosted Takt origin ({@see self::HOSTED_ENDPOINT}) so a bare setup works
@@ -33,14 +34,17 @@ final class Options
         public readonly bool $tagged = false,
         public readonly array $fileExtensions = [],
         // Advanced options. null = "unset" (tracker default applies); only a
-        // non-default value is rendered. scrubUrl is a raw JS expression and is
-        // expressible only in Mode::Sdk (SnippetRenderer fails fast otherwise).
+        // non-default value is rendered. scrubUrl and exclude live only in the
+        // full SDK, so they are expressible only in Mode::Sdk (SnippetRenderer
+        // fails fast otherwise): the ≤ 1 kB minimal snippet carries neither.
         public readonly ?float $sampleRate = null,
         public readonly ?bool $trackQuery = null,
         public readonly array $queryParams = [],
         public readonly ?bool $respectDnt = null,
         public readonly ?bool $enabled = null,
         public readonly ?string $scrubUrl = null,
+        /** Path prefixes never tracked (segment-bounded, checked at send time); Mode::Sdk only. */
+        public readonly array $exclude = [],
     ) {
     }
 
@@ -72,6 +76,7 @@ final class Options
             respectDnt: self::nullableBool($a['respectDnt'] ?? ($a['respect_dnt'] ?? null)),
             enabled: self::nullableBool($a['enabled'] ?? null),
             scrubUrl: isset($a['scrubUrl']) || isset($a['scrub_url']) ? self::str($a['scrubUrl'] ?? $a['scrub_url']) : null,
+            exclude: self::strList($a['exclude'] ?? []),
         );
     }
 

@@ -4,8 +4,8 @@ namespace Vskstudio\Takt;
 
 final class SnippetRenderer
 {
-    private const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.5.0/dist/takt.auto.js';
-    private const ESM_CDN = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.5.0/+esm';
+    private const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.8.0/dist/takt.auto.js';
+    private const ESM_CDN = 'https://cdn.jsdelivr.net/npm/@vskstudio/takt-core@0.8.0/+esm';
     private const ASSET_PATH = '/takt/takt.auto.js';
     private const ESM_PATH = '/takt/takt.esm.js';
 
@@ -15,6 +15,12 @@ final class SnippetRenderer
         // so it is only valid in Mode::Sdk. Fail fast rather than silently drop it.
         if ($options->scrubUrl !== null && $options->scrubUrl !== '' && $options->mode !== Mode::Sdk) {
             throw new \InvalidArgumentException('Takt: scrubUrl is a JS function and requires Mode::Sdk; it cannot be rendered in inline/cdn/asset mode.');
+        }
+        // exclude lives only in the full SDK (the ≤ 1 kB minimal snippet omits it).
+        // Fail fast rather than silently drop a privacy control the caller believes
+        // is active — a dropped exclusion would leak the very paths it should hide.
+        if ($options->exclude !== [] && $options->mode !== Mode::Sdk) {
+            throw new \InvalidArgumentException('Takt: exclude requires Mode::Sdk; the minimal snippet does not support path exclusion.');
         }
     }
 
@@ -201,6 +207,9 @@ final class SnippetRenderer
         }
         if ($o->queryParams !== []) {
             $c['queryParams'] = $o->queryParams;
+        }
+        if ($o->exclude !== []) {
+            $c['exclude'] = $o->exclude;
         }
         if ($o->outbound) {
             $c['outbound'] = true;

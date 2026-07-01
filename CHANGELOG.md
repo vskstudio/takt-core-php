@@ -1,5 +1,18 @@
 # vskstudio/takt-core-php
 
+## 0.5.0
+
+### Minor Changes
+
+- Add an `exclude` option (a list of path prefixes never tracked) mirroring
+  `@vskstudio/takt-core@0.8.0`. Exclusion is segment-bounded (`/app` matches
+  `/app` and `/app/…` but not `/application`) and checked at send time, so it
+  holds across SPA navigation. Like `scrubUrl`, `exclude` lives only in the full
+  SDK — the ≤ 1 kB minimal snippet omits it — so it requires `Mode::Sdk`;
+  `SnippetRenderer` throws if it is set in `inline`/`cdn`/`asset` mode rather than
+  silently dropping a privacy control the caller believes is active. The vendored
+  CDN/ESM tracker pins are bumped to `@vskstudio/takt-core@0.8.0`.
+
 ## 0.4.0
 
 ### Minor Changes
