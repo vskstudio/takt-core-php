@@ -2,6 +2,7 @@
 
 
 > 📚 **Documentation** — [taktlytics.com/docs/wrappers/php](https://taktlytics.com/docs/wrappers/php)
+
 Framework-agnostic PHP core for [Takt](https://github.com/vskstudio) analytics: a browser snippet renderer and a server-to-server event client.
 
 ## Install
