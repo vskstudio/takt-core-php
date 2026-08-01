@@ -5,7 +5,9 @@ namespace Vskstudio\Takt\Tests;
 use Http\Mock\Client;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Vskstudio\Takt\Options;
 use Vskstudio\Takt\Revenue;
 use Vskstudio\Takt\Takt;
 
@@ -170,5 +172,37 @@ final class TaktTest extends TestCase
 
         $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
         $this->assertSame('', $body['r']);
+    }
+
+    /**
+     * @return iterable<string,array{string,string}>
+     */
+    public static function endpointForms(): iterable
+    {
+        yield 'origin' => ['https://takt.example.com', 'https://takt.example.com/api/event'];
+        yield 'origin with trailing slash' => ['https://takt.example.com/', 'https://takt.example.com/api/event'];
+        yield 'full collect url' => ['https://takt.example.com/api/event', 'https://takt.example.com/api/event'];
+        yield 'full collect url with trailing slash' => ['https://takt.example.com/api/event/', 'https://takt.example.com/api/event'];
+        yield 'hosted origin' => [Options::HOSTED_ORIGIN, Options::HOSTED_ENDPOINT];
+        yield 'hosted endpoint' => [Options::HOSTED_ENDPOINT, Options::HOSTED_ENDPOINT];
+    }
+
+    #[DataProvider('endpointForms')]
+    public function test_endpoint_accepts_both_origin_and_full_collect_url(string $endpoint, string $expected): void
+    {
+        $psr17 = new Psr17Factory();
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = new Takt(
+            endpoint: $endpoint,
+            domain: 'example.com',
+            httpClient: $mock,
+            requestFactory: $psr17,
+            streamFactory: $psr17,
+        );
+
+        $takt->pageview('https://example.com/');
+
+        $this->assertSame($expected, (string) $mock->getLastRequest()->getUri());
     }
 }

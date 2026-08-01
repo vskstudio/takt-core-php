@@ -19,12 +19,14 @@ final class Takt
     private StreamFactoryInterface $streamFactory;
 
     /**
-     * @param string $endpoint Base ingest origin (NOT a full path); '/api/event'
-     *   is appended on each send. Pass {@see Options::HOSTED_ORIGIN}
-     *   ('https://taktlytics.com') to target the hosted Takt collector, or your
-     *   own first-party origin. This is a required base origin with no default:
-     *   unlike the client-side snippet it is always explicit, so there is no
-     *   default to migrate and no risk of a doubled '/api/event/api/event'.
+     * @param string $endpoint Where events are posted. Both forms are accepted
+     *   and normalized to the same collect URL:
+     *   - a base origin — {@see Options::HOSTED_ORIGIN} ('https://taktlytics.com')
+     *     or your own first-party origin — to which '/api/event' is appended;
+     *   - a full collect URL already ending in '/api/event', such as
+     *     {@see Options::HOSTED_ENDPOINT}, used verbatim.
+     *   The second form matches {@see Options::$endpoint} and the JS SDK, where
+     *   'endpoint' always means the full collect URL. Required, no default.
      */
     public function __construct(
         private readonly string $endpoint,
@@ -110,12 +112,24 @@ final class Takt
         return rtrim($origin, '/') . '/';
     }
 
+    /**
+     * Normalize the configured endpoint to the collect URL, accepting both a base
+     * origin ('/api/event' appended) and a full collect URL (used verbatim), so
+     * neither reading of the setting produces a doubled '/api/event/api/event'.
+     */
+    private function collectUrl(): string
+    {
+        $base = rtrim(trim($this->endpoint), '/');
+
+        return str_ends_with($base, '/api/event') ? $base : $base . '/api/event';
+    }
+
     /** @param array<string,mixed> $payload */
     private function send(array $payload): void
     {
         try {
             $request = $this->requestFactory
-                ->createRequest('POST', rtrim($this->endpoint, '/') . '/api/event')
+                ->createRequest('POST', $this->collectUrl())
                 ->withHeader('Content-Type', 'application/json')
                 ->withBody($this->streamFactory->createStream(
                     json_encode($payload, JSON_THROW_ON_ERROR)
