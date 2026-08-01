@@ -19,12 +19,14 @@ final class Takt
     private StreamFactoryInterface $streamFactory;
 
     /**
-     * @param string $endpoint Base ingest origin (NOT a full path); '/api/event'
-     *   is appended on each send. Pass {@see Options::HOSTED_ORIGIN}
-     *   ('https://taktlytics.com') to target the hosted Takt collector, or your
-     *   own first-party origin. This is a required base origin with no default:
-     *   unlike the client-side snippet it is always explicit, so there is no
-     *   default to migrate and no risk of a doubled '/api/event/api/event'.
+     * @param string $endpoint Where events are posted. Both forms are accepted
+     *   and normalized to the same collect URL:
+     *   - a base origin — {@see Options::HOSTED_ORIGIN} ('https://taktlytics.com')
+     *     or your own first-party origin — to which '/api/event' is appended;
+     *   - a full collect URL already ending in '/api/event', such as
+     *     {@see Options::HOSTED_ENDPOINT}, used verbatim.
+     *   The second form matches {@see Options::$endpoint} and the JS SDK, where
+     *   'endpoint' always means the full collect URL. Required, no default.
      */
     public function __construct(
         private readonly string $endpoint,
@@ -54,13 +56,20 @@ final class Takt
         return $clone;
     }
 
-    /** @param array<string,scalar> $props */
+    /**
+     * @param array<string,scalar> $props
+     * @param string|null          $url   Absolute http(s) URL of the page the event
+     *   belongs to. Omitted or blank, it falls back to the site home derived from
+     *   $domain: the ingest rejects a non-absolute URL, so an empty one would drop
+     *   the event entirely.
+     */
     public function event(string $name, array $props = [], ?Revenue $revenue = null, ?string $url = null, ?string $referrer = null): void
     {
         $payload = [
             'n' => $name,
             'd' => $this->domain,
-            'u' => $url ?? '',
+            'u' => $this->resolveUrl($url),
+            // The referrer, unlike the URL, is optional server-side: empty = direct.
             'r' => $referrer ?? '',
         ];
         if ($props !== []) {
@@ -78,12 +87,49 @@ final class Takt
         $this->event('pageview', [], null, $url, $referrer);
     }
 
+    /**
+     * The ingest requires an absolute http(s) URL and rejects the whole event
+     * (400) otherwise — a missing key decodes to the same empty string as an
+     * explicit one, so omitting it would not help. Callers with no page context
+     * (a WooCommerce purchase hook, a queued job) therefore get the site home.
+     */
+    private function resolveUrl(?string $url): string
+    {
+        $trimmed = trim($url ?? '');
+
+        return $trimmed !== '' ? $trimmed : $this->siteHomeUrl();
+    }
+
+    /** Home page of the configured site, e.g. 'example.com' → 'https://example.com/'. */
+    private function siteHomeUrl(): string
+    {
+        $domain = trim($this->domain);
+        if ($domain === '') {
+            return '';
+        }
+        $origin = preg_match('#^https?://#i', $domain) === 1 ? $domain : 'https://' . $domain;
+
+        return rtrim($origin, '/') . '/';
+    }
+
+    /**
+     * Normalize the configured endpoint to the collect URL, accepting both a base
+     * origin ('/api/event' appended) and a full collect URL (used verbatim), so
+     * neither reading of the setting produces a doubled '/api/event/api/event'.
+     */
+    private function collectUrl(): string
+    {
+        $base = rtrim(trim($this->endpoint), '/');
+
+        return str_ends_with($base, '/api/event') ? $base : $base . '/api/event';
+    }
+
     /** @param array<string,mixed> $payload */
     private function send(array $payload): void
     {
         try {
             $request = $this->requestFactory
-                ->createRequest('POST', rtrim($this->endpoint, '/') . '/api/event')
+                ->createRequest('POST', $this->collectUrl())
                 ->withHeader('Content-Type', 'application/json')
                 ->withBody($this->streamFactory->createStream(
                     json_encode($payload, JSON_THROW_ON_ERROR)

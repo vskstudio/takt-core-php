@@ -1,5 +1,27 @@
 # vskstudio/takt-core-php
 
+## 0.5.1
+
+### Patch Changes
+
+- Fix the server-to-server client sending an empty `u` (URL) when the caller
+  passed none. The ingest requires an absolute `http(s)` URL and rejects the
+  whole event with a `400` otherwise, so every URL-less `Takt::event()` — the
+  README's own `Signup` example, and the WooCommerce `Purchase` hook — was
+  silently dropped. Omitting the key would not have helped (a missing key
+  decodes to the same empty string server-side): the URL now falls back to the
+  site home derived from `domain` (`example.com` → `https://example.com/`).
+  The referrer `r` is unaffected — it is legitimately empty for direct access.
+- `Takt`'s `$endpoint` now accepts both readings of the setting. It used to mean
+  a base origin only (always appending `/api/event`), while `Options::$endpoint`
+  and the JS SDK mean the full collect URL — so passing `Options::HOSTED_ENDPOINT`
+  produced `…/api/event/api/event` and a silent `404`. A value already ending in
+  `/api/event` is now used verbatim; the base-origin form is unchanged, so no
+  existing configuration breaks.
+- Docs: the README `Takt` example no longer omits the page URL, documents both
+  endpoint forms, and no longer claims Do-Not-Track respect is "always on" (it
+  is on by default but `respectDnt: false` turns it off).
+
 ## 0.5.0
 
 ### Minor Changes
