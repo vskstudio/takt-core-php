@@ -116,4 +116,59 @@ final class TaktTest extends TestCase
         $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
         $this->assertSame(['count' => '3', 'paid' => '1'], $body['p']);
     }
+
+    public function test_url_falls_back_to_the_site_home_when_omitted(): void
+    {
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = $this->makeClient($mock);
+
+        $takt->event('Signup');
+
+        $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertSame('https://example.com/', $body['u']);
+    }
+
+    public function test_blank_url_falls_back_to_the_site_home(): void
+    {
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = $this->makeClient($mock);
+
+        $takt->event('Signup', [], null, '   ');
+
+        $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertSame('https://example.com/', $body['u']);
+    }
+
+    public function test_domain_already_carrying_a_scheme_is_not_prefixed_twice(): void
+    {
+        $psr17 = new Psr17Factory();
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = new Takt(
+            endpoint: 'https://takt.example.com',
+            domain: 'https://example.com',
+            httpClient: $mock,
+            requestFactory: $psr17,
+            streamFactory: $psr17,
+        );
+
+        $takt->event('Signup');
+
+        $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertSame('https://example.com/', $body['u']);
+    }
+
+    public function test_referrer_stays_empty_when_omitted(): void
+    {
+        $mock = new Client();
+        $mock->addResponse(new Response(202));
+        $takt = $this->makeClient($mock);
+
+        $takt->event('Signup');
+
+        $body = (array) json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertSame('', $body['r']);
+    }
 }

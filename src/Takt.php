@@ -54,13 +54,20 @@ final class Takt
         return $clone;
     }
 
-    /** @param array<string,scalar> $props */
+    /**
+     * @param array<string,scalar> $props
+     * @param string|null          $url   Absolute http(s) URL of the page the event
+     *   belongs to. Omitted or blank, it falls back to the site home derived from
+     *   $domain: the ingest rejects a non-absolute URL, so an empty one would drop
+     *   the event entirely.
+     */
     public function event(string $name, array $props = [], ?Revenue $revenue = null, ?string $url = null, ?string $referrer = null): void
     {
         $payload = [
             'n' => $name,
             'd' => $this->domain,
-            'u' => $url ?? '',
+            'u' => $this->resolveUrl($url),
+            // The referrer, unlike the URL, is optional server-side: empty = direct.
             'r' => $referrer ?? '',
         ];
         if ($props !== []) {
@@ -76,6 +83,31 @@ final class Takt
     public function pageview(?string $url = null, ?string $referrer = null): void
     {
         $this->event('pageview', [], null, $url, $referrer);
+    }
+
+    /**
+     * The ingest requires an absolute http(s) URL and rejects the whole event
+     * (400) otherwise — a missing key decodes to the same empty string as an
+     * explicit one, so omitting it would not help. Callers with no page context
+     * (a WooCommerce purchase hook, a queued job) therefore get the site home.
+     */
+    private function resolveUrl(?string $url): string
+    {
+        $trimmed = trim($url ?? '');
+
+        return $trimmed !== '' ? $trimmed : $this->siteHomeUrl();
+    }
+
+    /** Home page of the configured site, e.g. 'example.com' → 'https://example.com/'. */
+    private function siteHomeUrl(): string
+    {
+        $domain = trim($this->domain);
+        if ($domain === '') {
+            return '';
+        }
+        $origin = preg_match('#^https?://#i', $domain) === 1 ? $domain : 'https://' . $domain;
+
+        return rtrim($origin, '/') . '/';
     }
 
     /** @param array<string,mixed> $payload */
