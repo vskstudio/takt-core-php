@@ -43,7 +43,7 @@ use Vskstudio\Takt\Mode;
 new Options(domain: 'example.com', mode: Mode::Cdn, nonce: $cspNonce);
 ```
 
-The snippet honors `domain`, `endpoint`, `scriptOrigin` and `excludeLocalhost`. SPA tracking and Do-Not-Track respect are always on.
+The snippet honors `domain`, `endpoint`, `scriptOrigin`, `excludeLocalhost` and the advanced options below. SPA tracking is always on; Do-Not-Track respect is on by default and can only be turned off explicitly with `respectDnt: false`.
 
 ### Where events are sent
 
@@ -95,16 +95,18 @@ new Options(
 Send events directly from your backend, attributed to the real visitor.
 
 ```php
-use Vskstudio\Takt\Takt;
+use Vskstudio\Takt\Options;
 use Vskstudio\Takt\Revenue;
+use Vskstudio\Takt\Takt;
 
-// $endpoint is a base origin (NOT a full path); '/api/event' is appended for you.
-// Use Options::HOSTED_ORIGIN ('https://taktlytics.com') for the hosted collector.
-$takt = new Takt($endpoint, 'example.com', $apiKey);
+// $endpoint takes either form: a base origin ('/api/event' is appended) or the
+// full collect URL. Options::HOSTED_ORIGIN and Options::HOSTED_ENDPOINT both
+// target the hosted collector.
+$takt = new Takt(Options::HOSTED_ORIGIN, 'example.com', $apiKey);
 
 $takt
     ->withVisitor($request->ip(), $request->userAgent())
-    ->event('Signup', ['plan' => 'pro'], new Revenue('29.00', 'EUR'));
+    ->event('Signup', ['plan' => 'pro'], new Revenue('29.00', 'EUR'), 'https://example.com/signup');
 
 // or a pageview
 $takt->withVisitor($ip, $userAgent)->pageview('https://example.com/welcome');
@@ -112,12 +114,13 @@ $takt->withVisitor($ip, $userAgent)->pageview('https://example.com/welcome');
 
 - Requires an ingest-scoped API key bound to the domain.
 - Use `->withVisitor($ip, $userAgent)` so events are attributed to the visitor rather than your server.
+- Pass the page URL whenever you have one — it is what the event is attributed to. Omitted (or blank), it falls back to the site home derived from `domain` (`https://example.com/`): the ingest rejects a non-absolute URL outright, so an empty one would drop the event.
 - Fire-and-forget by default: transport errors are swallowed. Call `->strict()` to get a client that throws on failure (handy in tests).
 - The PSR-18 HTTP client and PSR-17 factories are auto-discovered (`php-http/discovery`). You may also inject your own.
 
 ## Wire payload
 
-Events are posted as JSON with compact keys: `n` (name), `d` (domain), `u` (url), `r` (referrer), `p` (props) and `$` (revenue). Screen width is not sent server-side.
+Events are posted as JSON with compact keys: `n` (name), `d` (domain), `u` (url), `r` (referrer), `p` (props) and `$` (revenue). Screen width is not sent server-side. `u` must be an absolute `http(s)` URL; `r` may be empty (direct access).
 
 ## License
 
